@@ -16,6 +16,7 @@
 		AA0007 /* SupabaseConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0018 /* SupabaseConfig.swift */; };
 		AA0008 /* SupabaseTodo.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0019 /* SupabaseTodo.swift */; };
 		AA0009 /* TodoItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0023 /* TodoItem.swift */; };
+		AA0010 /* AuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0024 /* AuthViewModel.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -29,6 +30,7 @@
 		AA0018 /* SupabaseConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models/SupabaseConfig.swift; sourceTree = "<group>"; };
 		AA0019 /* SupabaseTodo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models/SupabaseTodo.swift; sourceTree = "<group>"; };
 		AA0023 /* TodoItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models/TodoItem.swift; sourceTree = "<group>"; };
+		AA0024 /* AuthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewModels/AuthViewModel.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -60,6 +62,7 @@
 				AA0018 /* SupabaseConfig.swift */,
 				AA0019 /* SupabaseTodo.swift */,
 				AA0023 /* TodoItem.swift */,
+				AA0024 /* AuthViewModel.swift */,
 				AA0014 /* Assets.xcassets */,
 				AA0015 /* Preview Assets.xcassets */,
 			);
@@ -151,6 +154,7 @@
 				AA0007 /* SupabaseConfig.swift in Sources */,
 				AA0008 /* SupabaseTodo.swift in Sources */,
 				AA0009 /* TodoItem.swift in Sources */,
+				AA0010 /* AuthViewModel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
