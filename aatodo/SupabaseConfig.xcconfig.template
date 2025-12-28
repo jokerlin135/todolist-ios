@@ -1,0 +1,14 @@
+// Supabase Configuration Template
+// Copy this file to SupabaseConfig.xcconfig and fill in your credentials
+// DO NOT commit SupabaseConfig.xcconfig to git!
+
+// Supabase Project URL
+SUPABASE_URL = https://rwhjjiizrwkmmxwqdrrj.supabase.co
+
+// Supabase Anonymous Key (public, safe for client apps)
+SUPABASE_ANON_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ3aGpqaWl6cndrbW14d3FkcnJqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY5MTcwNDIsImV4cCI6MjA4MjQ5MzA0Mn0.2HdJNQShJW0hZM6apkTkPlaU4rB8QwNUtbq91Be6ZEE
+
+// ⚠️ SECURITY WARNING:
+// - NEVER commit real credentials to git
+// - Use environment variables for production
+// - Only use anon key in client apps (NEVER service_role key)
