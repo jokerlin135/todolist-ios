@@ -2,12 +2,15 @@
 //  SupabaseTodo.swift
 //  aatodo
 //
-//  Placeholder for Supabase DTO
+//  Supabase DTO for API serialization
 //  Issue: aatodo-83o.1
 //
 
 import Foundation
 
+/// Data Transfer Object for Supabase API
+/// - Uses snake_case for field names (Supabase/PostgreSQL convention)
+/// - ISO8601 date strings for timestamps
 struct SupabaseTodo: Codable {
     let id: String
     let title: String
@@ -16,5 +19,19 @@ struct SupabaseTodo: Codable {
     let updated_at: String
     let user_id: String
 
-    // TODO: Implement conversion methods in aatodo-83o.1
+    /// Coding keys for snake_case JSON mapping
+    enum CodingKeys: String, CodingKey {
+        case id
+        case title
+        case is_completed
+        case created_at
+        case updated_at
+        case user_id
+    }
+
+    /// Convert to TodoItem SwiftData model
+    /// - Returns: TodoItem instance
+    func toTodoItem() -> TodoItem {
+        return TodoItem(from: self)
+    }
 }
