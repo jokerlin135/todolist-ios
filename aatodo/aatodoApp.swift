@@ -38,7 +38,7 @@ struct aatodoApp: App {
                     switch authViewModel.authState {
                     case .authenticated:
                         // User is logged in - show main app
-                        MainTabView()
+                        MainTabView(authViewModel: authViewModel)
                             .environment(authViewModel)
                     case .unauthenticated, .unknown:
                         // User is not logged in - show auth flow

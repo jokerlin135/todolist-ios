@@ -11,99 +11,56 @@ import SwiftData
 
 struct MainTabView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query private var items: [TodoItem]
+    @State private var authViewModel: AuthViewModel
+    @State private var todoViewModel: TodoViewModel?
+
+    init(authViewModel: AuthViewModel) {
+        self._authViewModel = State(initialValue: authViewModel)
+    }
 
     var body: some View {
         TabView {
             // Todos Tab
-            TodoListView()
+            if let todoViewModel = todoViewModel {
+                NavigationStack {
+                    TodoListView(viewModel: todoViewModel)
+                }
                 .tabItem {
                     Label("Todos", systemImage: "checkmark.circle")
                 }
+            } else {
+                ProgressView("Loading...")
+                    .tabItem {
+                        Label("Todos", systemImage: "checkmark.circle")
+                    }
+            }
 
             // Settings Tab
-            SettingsView()
+            SettingsView(authViewModel: authViewModel)
                 .tabItem {
                     Label("Settings", systemImage: "gear")
                 }
         }
-    }
-}
+        .task {
+            // Initialize TodoViewModel when view appears
+            if todoViewModel == nil {
+                let viewModel = TodoViewModel(modelContext: modelContext)
 
-// MARK: - Todo List View Placeholder
-
-struct TodoListView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query private var items: [TodoItem]
-
-    var body: some View {
-        NavigationStack {
-            List {
-                if items.isEmpty {
-                    ContentUnavailableView {
-                        Label("No Todos", systemImage: "checkmark.circle")
-                    } description: {
-                        Text("Create your first todo to get started")
-                    }
-                } else {
-                    ForEach(items) { item in
-                        HStack {
-                            Image(systemName: item.isCompleted ? "checkmark.circle.fill" : "circle")
-                                .foregroundStyle(item.isCompleted ? .green : .gray)
-                                .onTapGesture {
-                                    toggleTodo(item)
-                                }
-
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(item.title)
-                                    .strikethrough(item.isCompleted)
-                                    .foregroundStyle(item.isCompleted ? .secondary : .primary)
-
-                                Text(item.updatedAt, style: .relative)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                    }
-                    .onDelete(perform: deleteTodos)
+                // Set current user ID if available
+                if let userId = authViewModel.currentUser?.id {
+                    viewModel.setCurrentUser(userId: userId)
                 }
-            }
-            .navigationTitle("Todos")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        // TODO: Add new todo
-                    } label: {
-                        Image(systemName: "plus")
-                    }
-                }
-            }
-        }
-    }
 
-    private func toggleTodo(_ item: TodoItem) {
-        withAnimation {
-            if item.isCompleted {
-                item.markAsUncompleted()
-            } else {
-                item.markAsCompleted()
-            }
-        }
-    }
-
-    private func deleteTodos(at offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
+                self.todoViewModel = viewModel
             }
         }
     }
 }
 
-// MARK: - Settings View Placeholder
+// MARK: - Settings View
 
 struct SettingsView: View {
-    @Environment(AuthViewModel.self) private var authViewModel
+    let authViewModel: AuthViewModel
 
     var body: some View {
         NavigationStack {
@@ -116,9 +73,11 @@ struct SettingsView: View {
                         VStack(alignment: .leading) {
                             Text("Signed In")
                                 .font(.subheadline)
-                            Text("User ID: \(authViewModel.currentUser?.id ?? "Unknown")")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                            if let user = authViewModel.currentUser {
+                                Text(user.email)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
                         }
                     }
                 }
@@ -151,6 +110,10 @@ struct SettingsView: View {
     let sample = TodoItem(title: "Sample Todo", userId: "test-user")
     context.insert(sample)
 
-    return MainTabView()
+    let keychain = KeychainService.shared
+    let modelContext = container.mainContext
+    let authViewModel = AuthViewModel(keychainService: keychain, modelContext: modelContext)
+
+    return MainTabView(authViewModel: authViewModel)
         .modelContainer(container)
 }
