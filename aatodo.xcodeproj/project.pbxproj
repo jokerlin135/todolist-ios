@@ -19,6 +19,7 @@
 		AA0010 /* AuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0024 /* AuthViewModel.swift */; };
 		AA0025 /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0026 /* MainTabView.swift */; };
 		AA0027 /* TodoViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0028 /* TodoViewModel.swift */; };
+		AA0029 /* SwiftDataService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0030 /* SwiftDataService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -35,6 +36,7 @@
 		AA0024 /* AuthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewModels/AuthViewModel.swift; sourceTree = "<group>"; };
 		AA0026 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Features/MainTabView.swift; sourceTree = "<group>"; };
 		AA0028 /* TodoViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewModels/TodoViewModel.swift; sourceTree = "<group>"; };
+		AA0030 /* SwiftDataService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/SwiftDataService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -64,6 +66,7 @@
 				AA0026 /* MainTabView.swift */,
 				AA0016 /* KeychainService.swift */,
 				AA0017 /* SupabaseService.swift */,
+				AA0030 /* SwiftDataService.swift */,
 				AA0018 /* SupabaseConfig.swift */,
 				AA0019 /* SupabaseTodo.swift */,
 				AA0023 /* TodoItem.swift */,
@@ -156,6 +159,7 @@
 				AA0002 /* ContentView.swift in Sources */,
 				AA0001 /* aatodoApp.swift in Sources */,
 				AA0003 /* KeychainService.swift in Sources */,
+				AA0029 /* SwiftDataService.swift in Sources */,
 				AA0025 /* MainTabView.swift in Sources */,
 				AA0027 /* TodoViewModel.swift in Sources */,
 				AA0006 /* SupabaseService.swift in Sources */,
