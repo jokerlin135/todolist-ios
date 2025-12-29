@@ -2,9 +2,15 @@
 //  Extensions.swift
 //  aatodo
 //
-//  Useful extensions
+//  Utility extensions for notifications and system helpers
+//  Issue: aatodo-8oz.2
 //
 
 import Foundation
 
-// TODO: Add extensions as needed during development
+// MARK: - Notification Names
+
+extension Notification.Name {
+    /// Posted when network becomes available after being unavailable
+    static let networkDidBecomeAvailable = Notification.Name("networkDidBecomeAvailable")
+}
