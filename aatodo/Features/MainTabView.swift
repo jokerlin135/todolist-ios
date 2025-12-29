@@ -44,7 +44,11 @@ struct MainTabView: View {
         .task {
             // Initialize TodoViewModel when view appears
             if todoViewModel == nil {
-                let viewModel = TodoViewModel(modelContext: modelContext)
+                // Create SyncService first
+                let syncService = SyncService.shared(modelContext: modelContext)
+
+                // Create TodoViewModel with SyncService
+                let viewModel = TodoViewModel(syncService: syncService)
 
                 // Set current user ID if available
                 if let userId = authViewModel.currentUser?.id {
@@ -113,6 +117,12 @@ struct SettingsView: View {
     let keychain = KeychainService.shared
     let modelContext = container.mainContext
     let authViewModel = AuthViewModel(keychainService: keychain, modelContext: modelContext)
+
+    // Create SyncService for preview
+    let syncService = SyncService.shared(modelContext: modelContext)
+
+    // Create TodoViewModel with SyncService
+    // Note: In preview, we won't set current user, so it will show empty state
 
     return MainTabView(authViewModel: authViewModel)
         .modelContainer(container)

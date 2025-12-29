@@ -2,8 +2,8 @@
 //  TodoViewModel.swift
 //  aatodo
 //
-//  Todo view model with basic state management
-//  Issue: aatodo-444.2
+//  Todo view model with Local-First sync
+//  Issue: aatodo-444.2, aatodo-8oz.6
 //
 
 import Foundation
@@ -38,10 +38,10 @@ enum TodoError: LocalizedError {
 
 // MARK: - Todo ViewModel
 
-/// Todo view model using @Observable
+/// Todo view model using @Observable with Local-First sync
 /// - Manages todo list state
-/// - Handles CRUD operations via SupabaseService
-/// - Direct Supabase calls (no sync layer yet)
+/// - Handles CRUD operations via SyncService for Local-First behavior
+/// - Shows sync status indicator
 @Observable
 final class TodoViewModel {
     // MARK: - Published Properties
@@ -55,22 +55,82 @@ final class TodoViewModel {
     /// Error message
     var error: TodoError?
 
+    /// Sync status for UI display
+    var syncStatus: SyncStatus = .unknown
+
+    /// Last successful sync time
+    var lastSyncTime: Date? {
+        syncService.lastSyncTime
+    }
+
     /// Current user ID
     private var currentUserId: String?
 
+    // MARK: - Sync Status
+
+    /// Sync status states
+    enum SyncStatus: CustomStringConvertible {
+        case unknown
+        case synced
+        case syncing
+        case offline
+
+        var description: String {
+            switch self {
+            case .unknown:
+                return "Unknown"
+            case .synced:
+                return "Synced"
+            case .syncing:
+                return "Syncing..."
+            case .offline:
+                return "Offline"
+            }
+        }
+    }
+
     // MARK: - Dependencies
 
-    private let supabaseService: SupabaseService
-    private let modelContext: ModelContext
+    private let syncService: SyncService
 
     // MARK: - Initialization
 
-    init(
-        supabaseService: SupabaseService = SupabaseService.shared,
-        modelContext: ModelContext
-    ) {
-        self.supabaseService = supabaseService
-        self.modelContext = modelContext
+    init(syncService: SyncService) {
+        self.syncService = syncService
+
+        // Observe syncService.isSyncing changes
+        observeSyncStatus()
+    }
+
+    // MARK: - Sync Status Observation
+
+    /// Observe syncService for sync status changes
+    private func observeSyncStatus() {
+        // Initial sync status
+        updateSyncStatus()
+
+        // Observe isSyncing changes
+        // Note: Since SyncService is @Observable, we can observe it
+        // In a real implementation, we'd use proper observation
+        Task {
+            while !Task.isCancelled {
+                await MainActor.run {
+                    updateSyncStatus()
+                }
+                try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+            }
+        }
+    }
+
+    /// Update sync status based on syncService state and network
+    private func updateSyncStatus() {
+        if syncService.isSyncing {
+            self.syncStatus = .syncing
+        } else if NetworkMonitor.shared.isConnected {
+            self.syncStatus = .synced
+        } else {
+            self.syncStatus = .offline
+        }
     }
 
     // MARK: - Setup
@@ -84,9 +144,10 @@ final class TodoViewModel {
         }
     }
 
-    // MARK: - CRUD Operations
+    // MARK: - CRUD Operations (Local-First via SyncService)
 
-    /// Load todos from Supabase
+    /// Load todos with Local-First strategy
+    /// - Returns immediately from local storage, syncs in background
     func loadTodos() async {
         guard let userId = currentUserId else {
             await MainActor.run {
@@ -101,32 +162,16 @@ final class TodoViewModel {
         }
 
         do {
-            // Fetch from Supabase
-            let supabaseTodos = try await supabaseService.fetchTodos(userId: userId)
+            // SyncService.fetchTodos returns local data immediately
+            let fetchedTodos = try await syncService.fetchTodos(userId: userId)
 
-            // Convert to TodoItem and save to SwiftData
             await MainActor.run {
-                // Clear existing todos from context
-                let descriptor = FetchDescriptor<TodoItem>()
-                let existingTodos = (try? modelContext.fetch(descriptor)) ?? []
-                for todo in existingTodos {
-                    modelContext.delete(todo)
-                }
-
-                // Insert new todos
-                self.todos = []
-                for supabaseTodo in supabaseTodos {
-                    let todoItem = TodoItem(from: supabaseTodo)
-                    modelContext.insert(todoItem)
-                    self.todos.append(todoItem)
-                }
-
-                try? modelContext.save()
+                self.todos = fetchedTodos
                 self.isLoading = false
             }
-        } catch let error as SupabaseError {
+        } catch let error as SyncError {
             await MainActor.run {
-                self.error = .networkError(error.localizedDescription)
+                self.error = .operationFailed(error.localizedDescription)
                 self.isLoading = false
             }
         } catch {
@@ -137,7 +182,7 @@ final class TodoViewModel {
         }
     }
 
-    /// Add a new todo
+    /// Add a new todo with optimistic write
     /// - Parameter title: The todo title
     func addTodo(title: String) async {
         guard let userId = currentUserId else {
@@ -156,39 +201,30 @@ final class TodoViewModel {
             return
         }
 
-        await MainActor.run {
-            self.isLoading = true
-            self.error = nil
-        }
-
         do {
             // Create new TodoItem
             let newTodo = TodoItem(title: trimmedTitle, userId: userId)
 
-            // Send to Supabase
-            try await supabaseService.createTodo(newTodo)
+            // SyncService saves locally first, uploads in background
+            try await syncService.createTodo(newTodo)
 
-            // Add to local state and SwiftData
+            // Add to local state
             await MainActor.run {
-                modelContext.insert(newTodo)
                 self.todos.append(newTodo)
-                try? modelContext.save()
-                self.isLoading = false
+                self.error = nil
             }
-        } catch let error as SupabaseError {
+        } catch let error as SyncError {
             await MainActor.run {
-                self.error = .networkError(error.localizedDescription)
-                self.isLoading = false
+                self.error = .operationFailed(error.localizedDescription)
             }
         } catch {
             await MainActor.run {
                 self.error = .operationFailed(error.localizedDescription)
-                self.isLoading = false
             }
         }
     }
 
-    /// Toggle todo completion status
+    /// Toggle todo completion status with optimistic write
     /// - Parameter todo: The todo to toggle
     func toggleCompletion(_ todo: TodoItem) async {
         await MainActor.run {
@@ -196,22 +232,16 @@ final class TodoViewModel {
         }
 
         do {
-            // Toggle locally first for optimistic UI
-            let newCompletedState = !todo.isCompleted
-            if newCompletedState {
-                todo.markAsCompleted()
-            } else {
+            // Toggle completion
+            if todo.isCompleted {
                 todo.markAsUncompleted()
+            } else {
+                todo.markAsCompleted()
             }
 
-            // Update in Supabase
-            try await supabaseService.updateTodo(todo)
-
-            // Save to SwiftData
-            await MainActor.run {
-                try? modelContext.save()
-            }
-        } catch let error as SupabaseError {
+            // SyncService updates locally first, uploads in background
+            try await syncService.updateTodo(todo)
+        } catch let error as SyncError {
             // Revert on error
             if todo.isCompleted {
                 todo.markAsUncompleted()
@@ -220,7 +250,7 @@ final class TodoViewModel {
             }
 
             await MainActor.run {
-                self.error = .networkError(error.localizedDescription)
+                self.error = .operationFailed(error.localizedDescription)
             }
         } catch {
             await MainActor.run {
@@ -229,7 +259,7 @@ final class TodoViewModel {
         }
     }
 
-    /// Delete a todo
+    /// Delete a todo with optimistic write
     /// - Parameter todo: The todo to delete
     func deleteTodo(_ todo: TodoItem) async {
         await MainActor.run {
@@ -237,18 +267,16 @@ final class TodoViewModel {
         }
 
         do {
-            // Delete from Supabase
-            try await supabaseService.deleteTodo(todoId: todo.id)
+            // SyncService deletes locally first, uploads in background
+            try await syncService.deleteTodo(todo)
 
-            // Remove from local state and SwiftData
+            // Remove from local state
             await MainActor.run {
-                modelContext.delete(todo)
                 self.todos.removeAll { $0.id == todo.id }
-                try? modelContext.save()
             }
-        } catch let error as SupabaseError {
+        } catch let error as SyncError {
             await MainActor.run {
-                self.error = .networkError(error.localizedDescription)
+                self.error = .operationFailed(error.localizedDescription)
             }
         } catch {
             await MainActor.run {
@@ -257,7 +285,7 @@ final class TodoViewModel {
         }
     }
 
-    /// Update todo title
+    /// Update todo title with optimistic write
     /// - Parameters:
     ///   - todo: The todo to update
     ///   - newTitle: The new title
@@ -279,24 +307,34 @@ final class TodoViewModel {
         let oldTitle = todo.title
 
         do {
-            // Update locally first for optimistic UI
+            // Update locally first
             todo.updateTitle(trimmedTitle)
 
-            // Update in Supabase
-            try await supabaseService.updateTodo(todo)
-
-            // Save to SwiftData
-            await MainActor.run {
-                try? modelContext.save()
-            }
-        } catch let error as SupabaseError {
+            // SyncService updates locally first, uploads in background
+            try await syncService.updateTodo(todo)
+        } catch let error as SyncError {
             // Revert on error
             todo.title = oldTitle
             todo.updatedAt = Date()
 
             await MainActor.run {
-                self.error = .networkError(error.localizedDescription)
+                self.error = .operationFailed(error.localizedDescription)
             }
+        } catch {
+            await MainActor.run {
+                self.error = .operationFailed(error.localizedDescription)
+            }
+        }
+    }
+
+    /// Upload pending changes to server
+    func uploadPending() async {
+        guard let userId = currentUserId else {
+            return
+        }
+
+        do {
+            try await syncService.uploadPending(userId: userId)
         } catch {
             await MainActor.run {
                 self.error = .operationFailed(error.localizedDescription)
@@ -324,6 +362,12 @@ final class TodoViewModel {
     /// Count of completed todos
     var completedCount: Int {
         completedTodos.count
+    }
+
+    /// Count of todos pending sync
+    var pendingSyncCount: Int {
+        guard let userId = currentUserId else { return 0 }
+        return (try? syncService.countPendingSync(userId: userId)) ?? 0
     }
 
     // MARK: - Helpers

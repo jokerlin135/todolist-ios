@@ -328,9 +328,10 @@ struct EditTodoSheet: View {
     modelContext.insert(todo1)
     modelContext.insert(todo2)
 
-    let viewModel = TodoViewModel(modelContext: modelContext)
-    viewModel.todos = [todo1, todo2]
-    viewModel.currentUserId = "preview-user"
+    // Create SyncService
+    let syncService = SyncService.shared(modelContext: modelContext)
+    let viewModel = TodoViewModel(syncService: syncService)
+    viewModel.setCurrentUser(userId: "preview-user")
 
     return NavigationStack {
         TodoListView(viewModel: viewModel)
