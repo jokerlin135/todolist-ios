@@ -21,6 +21,7 @@
 		AA0027 /* TodoViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0028 /* TodoViewModel.swift */; };
 		AA0029 /* SwiftDataService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0030 /* SwiftDataService.swift */; };
 		AA0031 /* NetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0032 /* NetworkMonitor.swift */; };
+		AA0033 /* SyncService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0034 /* SyncService.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -39,6 +40,7 @@
 		AA0028 /* TodoViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewModels/TodoViewModel.swift; sourceTree = "<group>"; };
 		AA0030 /* SwiftDataService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/SwiftDataService.swift; sourceTree = "<group>"; };
 		AA0032 /* NetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Utilities/NetworkMonitor.swift; sourceTree = "<group>"; };
+		AA0034 /* SyncService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services/SyncService.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -69,6 +71,7 @@
 				AA0016 /* KeychainService.swift */,
 				AA0017 /* SupabaseService.swift */,
 				AA0030 /* SwiftDataService.swift */,
+				AA0034 /* SyncService.swift */,
 				AA0032 /* NetworkMonitor.swift */,
 				AA0018 /* SupabaseConfig.swift */,
 				AA0019 /* SupabaseTodo.swift */,
@@ -163,6 +166,7 @@
 				AA0001 /* aatodoApp.swift in Sources */,
 				AA0003 /* KeychainService.swift in Sources */,
 				AA0029 /* SwiftDataService.swift in Sources */,
+				AA0033 /* SyncService.swift in Sources */,
 				AA0031 /* NetworkMonitor.swift in Sources */,
 				AA0025 /* MainTabView.swift in Sources */,
 				AA0027 /* TodoViewModel.swift in Sources */,
