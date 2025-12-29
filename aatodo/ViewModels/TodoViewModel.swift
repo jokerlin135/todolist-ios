@@ -100,6 +100,9 @@ final class TodoViewModel {
 
         // Observe syncService.isSyncing changes
         observeSyncStatus()
+
+        // Observe network recovery for auto-retry
+        observeNetworkRecovery()
     }
 
     // MARK: - Sync Status Observation
@@ -130,6 +133,31 @@ final class TodoViewModel {
             self.syncStatus = .synced
         } else {
             self.syncStatus = .offline
+        }
+    }
+
+    // MARK: - Network Recovery Observation
+
+    /// Observe network recovery for automatic sync retry
+    private func observeNetworkRecovery() {
+        Task { [weak self] in
+            for await _ in NotificationCenter.default.notifications(
+                named: .networkDidBecomeAvailable
+            ) {
+                guard let self = self,
+                      let userId = self.currentUserId else {
+                    continue
+                }
+
+                // Check if there are pending items to sync
+                let pendingCount = (try? self.syncService.countPendingSync(userId: userId)) ?? 0
+                guard pendingCount > 0 else {
+                    continue
+                }
+
+                // Trigger sync retry
+                await self.uploadPending()
+            }
         }
     }
 

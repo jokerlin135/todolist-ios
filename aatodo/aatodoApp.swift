@@ -61,6 +61,9 @@ struct aatodoApp: App {
                 }
             }
             .task {
+                // Start network monitoring
+                NetworkMonitor.shared.start()
+
                 // Initialize AuthViewModel and check session on app launch
                 if authViewModel == nil {
                     let modelContext = sharedModelContainer.mainContext
