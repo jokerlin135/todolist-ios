@@ -132,10 +132,10 @@ final class SyncService {
 
     // MARK: - Sync from Server
 
-    /// Sync todos from server to local (server wins)
+    /// Sync todos from server to local with conflict resolution
     /// - Parameter userId: The user ID
     /// - Throws: SyncError on failure
-    /// - Note: Merges server data with local, server data takes precedence
+    /// - Note: Uses Last-Write-Wins conflict resolution with timestamp comparison
     func syncFromServer(userId: String) async throws {
         guard networkMonitor.isConnected else {
             // Network unavailable, skip sync
@@ -156,24 +156,44 @@ final class SyncService {
             // Fetch from Supabase
             let serverTodos = try await supabase.fetchTodos(userId: userId)
 
-            // Merge with local (server wins)
+            // Merge with local using conflict resolution
             for serverTodo in serverTodos {
-                let todoItem = serverTodo.toTodoItem()
+                let serverItem = serverTodo.toTodoItem()
 
                 // Check if local exists
                 do {
-                    let existingTodo = try local.fetchTodo(todoId: todoItem.id)
+                    let localTodo = try local.fetchTodo(todoId: serverItem.id)
 
-                    // Server wins: update local if server is newer
-                    if todoItem.updatedAt > existingTodo.updatedAt {
-                        // Preserve local changes if they haven't been synced
-                        if !existingTodo.needsSync {
-                            try local.update(todoItem)
+                    // Conflict resolution logic
+                    if !localTodo.needsSync {
+                        // Case 1: Clean local (needsSync=false)
+                        // Trust server, overwrite local completely
+                        localTodo.title = serverItem.title
+                        localTodo.isCompleted = serverItem.isCompleted
+                        localTodo.updatedAt = serverItem.updatedAt
+                        localTodo.needsSync = false
+                        try local.update(localTodo)
+                    } else {
+                        // Case 2: Dirty local (needsSync=true)
+                        // Compare timestamps to determine winner (Last-Write-Wins)
+                        if serverItem.updatedAt > localTodo.updatedAt {
+                            // Server is newer: overwrite local
+                            // Note: This loses local changes, but server wins in Last-Write-Wins
+                            localTodo.title = serverItem.title
+                            localTodo.isCompleted = serverItem.isCompleted
+                            localTodo.updatedAt = serverItem.updatedAt
+                            localTodo.needsSync = false
+                            try local.update(localTodo)
+                        } else {
+                            // Local is newer or equal: ignore server
+                            // Local changes will be uploaded later via uploadPending()
+                            // No action needed - keep local as-is
                         }
                     }
                 } catch {
-                    // Local doesn't exist, insert from server
-                    try local.save(todoItem)
+                    // Case 3: Local doesn't exist
+                    // New item from server, add to local
+                    try local.save(serverItem)
                 }
             }
 
