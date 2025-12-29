@@ -18,7 +18,16 @@ struct aatodoApp: App {
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
         do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+            let container = try ModelContainer(for: schema, configurations: [modelConfiguration])
+
+            // Enable File Protection on database file
+            // This encrypts the database when device is locked
+            if let url = modelConfiguration.url {
+                let attributes = [FileAttributeKey.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication]
+                try FileManager.default.setAttributes(attributes, ofItemAtPath: url.path)
+            }
+
+            return container
         } catch {
             fatalError("Could not create ModelContainer: \(error)")
         }
