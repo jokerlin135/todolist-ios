@@ -202,22 +202,19 @@ final class AuthViewModel {
 
     // MARK: - Sign Out
 
-    /// Sign out and cleanup
-    /// Flow: Call Supabase logout → Clear Keychain → Delete user's local todos
+    /// Sign out and cleanup user data
+    /// Flow: Call Supabase logout → Clear Keychain → Delete user's local todos → Reset state
     func signOut() async {
         await MainActor.run {
             isLoading = true
         }
 
         do {
-            // TODO: Call Supabase logout
+            // TODO: Call Supabase logout to revoke session on server
             // try await supabaseService.client.auth.signOut()
 
-            // Clear tokens from Keychain
-            try await keychainService.deleteToken(forKey: KeychainService.TokenKey.accessToken)
-            try await keychainService.deleteToken(forKey: KeychainService.TokenKey.refreshToken)
-            try await keychainService.deleteToken(forKey: KeychainService.TokenKey.userId)
-            try await keychainService.deleteToken(forKey: KeychainService.TokenKey.userEmail)
+            // Clear all tokens from Keychain (access, refresh, userId, email)
+            try await keychainService.clearAllTokens()
 
             // Delete user's local todos (SwiftData)
             await deleteUserLocalTodos()
@@ -226,6 +223,7 @@ final class AuthViewModel {
                 authState = .unauthenticated
                 currentUser = nil
                 isLoading = false
+                errorMessage = nil
             }
         } catch {
             await MainActor.run {
@@ -254,17 +252,26 @@ final class AuthViewModel {
     }
 
     /// Delete user's local todos from SwiftData
+    /// Secure cleanup: removes all todos belonging to the current user
     private func deleteUserLocalTodos() async {
+        guard let userId = currentUser?.id else {
+            return
+        }
+
         do {
-            // TODO: Delete all TodoItems for current user
-            // let descriptor = FetchDescriptor<TodoItem>(
-            //     predicate: #Predicate { $0.userId == currentUserId }
-            // )
-            // let userTodos = try modelContext.fetch(descriptor)
-            // for todo in userTodos {
-            //     modelContext.delete(todo)
-            // }
-            // try modelContext.save()
+            // Fetch all todos for current user
+            let descriptor = FetchDescriptor<TodoItem>(
+                predicate: #Predicate { $0.userId == userId }
+            )
+            let userTodos = try modelContext.fetch(descriptor)
+
+            // Delete all user's todos
+            for todo in userTodos {
+                modelContext.delete(todo)
+            }
+
+            // Save changes to persist deletion
+            try modelContext.save()
         } catch {
             print("Error deleting local todos: \(error)")
         }
