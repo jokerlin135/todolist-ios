@@ -31,6 +31,7 @@ enum SupabaseError: LocalizedError {
     case networkError(Error)
     case authError(String)
     case serverError(String, code: Int)
+    case rateLimitExceeded(retryAfter: TimeInterval?)
 
     var errorDescription: String? {
         switch self {
@@ -46,6 +47,12 @@ enum SupabaseError: LocalizedError {
             return "Authentication error: \(message)"
         case .serverError(let message, let code):
             return "Server error \(code): \(message)"
+        case .rateLimitExceeded(let retryAfter):
+            if let retryAfter = retryAfter {
+                return "Rate limit exceeded. Please retry after \(Int(retryAfter)) seconds."
+            } else {
+                return "Rate limit exceeded. Please retry later."
+            }
         }
     }
 }

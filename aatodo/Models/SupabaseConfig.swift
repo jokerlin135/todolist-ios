@@ -3,10 +3,22 @@
 //  aatodo
 //
 //  Supabase configuration loader
-//  Issue: aatodo-83e.4
+//  Issue: aatodo-83e.4, aatodo-1vp.4
 //
 
 import Foundation
+
+// MARK: - Supabase Dashboard Configuration
+
+/// Rate limiting must be configured in Supabase Dashboard:
+/// 1. Navigate to: API > Rate Limiting
+/// 2. Enable rate limiting
+/// 3. Set limits: 100 requests/minute per IP
+/// 4. Configure burst allowance: 20 requests
+/// 5. Save and test
+///
+/// HTTP 429 (Too Many Requests) will be returned when limit exceeded.
+/// See Constants.RateLimit for configured values.
 
 /// Supabase configuration loaded from environment variables
 struct SupabaseConfig {
